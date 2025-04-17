@@ -1,0 +1,35 @@
+spring:
+  security:
+    user:
+      name: admin
+      password: admin
+  application:
+    name: actuatordemo
+
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    enable:
+      jvm:
+        memory: false
+  endpoints:
+    enabled-by-default: true
+    web:
+      exposure:
+        include: health,info,shutdown,prometheus
+  endpoint:
+    health:
+      show-details: always
+    info:
+      enabled: true
+
+    security:
+      enabled: false
+
+info:
+  application:
+    team: creditpolicy
+
+

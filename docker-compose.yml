@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Spring Boot приложение
+  app:
+    image: eclipse-temurin:21-jdk-jammy
+    container_name: spring-boot-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./target/actuatordemo-0.0.1-SNAPSHOT.jar:/app.jar  # Укажите имя вашего JAR-файла
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    command: java -jar /app.jar
+    depends_on:
+      - prometheus
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+  # Grafana
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    depends_on:
+      - prometheus
