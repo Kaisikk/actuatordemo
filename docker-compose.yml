@@ -9,12 +9,21 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./target/actuatordemo-0.0.1-SNAPSHOT.jar:/app.jar  # Укажите имя вашего JAR-файла
+      - ./target/actuatordemo-0.0.1-SNAPSHOT.jar:/app.jar
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      # Включаем Actuator и метрики для Prometheus
+      - management.endpoints.web.exposure.include=prometheus,health,metrics
+      - management.endpoint.prometheus.enabled=true
+      # Настройки для более детальных метрик
+      - management.metrics.export.prometheus.enabled=true
+      - management.metrics.tags.application=spring-boot-app
     command: java -jar /app.jar
-    depends_on:
-      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Prometheus
   prometheus:
@@ -27,6 +36,10 @@ services:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"  # Позволяет перезагружать конфиг через API
+    depends_on:
+      app:
+        condition: service_healthy
 
   # Grafana
   grafana:
@@ -37,5 +50,12 @@ services:
       - "3000:3000"
     volumes:
       - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - grafana-storage:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin  # Пароль по умолчанию
+      - GF_USERS_ALLOW_SIGN_UP=false
     depends_on:
       - prometheus
+
+volumes:
+  grafana-storage:  # Постоянное хранилище для Grafana
